@@ -1,7 +1,7 @@
 package rs.fpl.instalysis
 
 import android.annotation.SuppressLint
-import android.app.Application
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -15,7 +15,9 @@ import io.github.libxposed.api.annotations.XposedHooker
 
 class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoadedParam): XposedModule(base, params){
 
-
+    companion object{
+        var context: Context? = null
+    }
     @XposedHooker
     class MyHooker(private val magic: Int) : XposedInterface.Hooker{
         companion object{
@@ -23,8 +25,19 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
             @JvmStatic
             @BeforeInvocation
             fun before(callback: XposedInterface.BeforeHookCallback){
-                val context: Context = callback.args[0] as Context
-                Toast.makeText(context, "hello world", Toast.LENGTH_SHORT).show()
+                if(context == null){
+                    context = callback.args[0] as Context
+                    try {
+                        context?.packageName.equals("")
+                    }catch (e: Exception){
+                        context = null
+                        Log.e("nigga", "wrong thingy")
+                    }
+                    return
+                }
+//                val context: Context = callback.args[0] as Context
+                Toast.makeText(context, "Activity started: " + (callback.thisObject as Activity)::class.qualifiedName.toString(), Toast.LENGTH_SHORT).show()
+                Log.d("nigga", (callback.thisObject as Activity)::class.qualifiedName.toString())
             }
             @JvmStatic
             @AfterInvocation
@@ -40,12 +53,10 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
 //        if(param.packageName != "mobi.globaltel.selfcare"){
 //            return
 //        }
-        val attachMethod = Application::class.java.getDeclaredMethod("attach", Context::class.java)
+        val attachMethod = Class.forName("android.app.Application").getDeclaredMethod("attach", Context::class.java)
+        val onCreateMethod = Class.forName("android.app.Activity").getDeclaredMethod("onCreate", Class.forName("android.os.Bundle"))
+        hook(onCreateMethod, MyHooker::class.java)
         hook(attachMethod, MyHooker::class.java)
 
-//        Log.d("WHY", "NIGGER")
-
-//        super.onPackageLoaded(param)
-//
     }
 }
