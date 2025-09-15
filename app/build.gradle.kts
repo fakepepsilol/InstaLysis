@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+//    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -60,6 +60,12 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
 
+//    implementation(libs.androidx.datastore.preferences)
+//    implementation(libs.androidx.datastore.preferences.core)
+
     compileOnly(libs.libxposed.api)
     implementation(libs.libxposed.service)
+
+    implementation(libs.dexkit)
+    implementation(libs.commons.text)
 }

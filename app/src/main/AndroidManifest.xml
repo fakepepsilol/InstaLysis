@@ -18,10 +18,14 @@
             android:theme="@style/Theme.InstaLysis">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver android:exported="true" android:name=".receivers.UpdatePrefs">
+            <intent-filter>
+                <action android:name="rs.fpl.instalysis.UPDATE_PREFS"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
