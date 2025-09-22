@@ -13,6 +13,10 @@ xposed-api = "100"
 xposed-service = "100-1.0.0"
 dexkit = "2.0.6"
 commonsText = "1.14.0"
+appcompat = "1.6.1"
+material = "1.10.0"
+activity = "1.8.0"
+constraintlayout = "2.1.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +39,10 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 
 libxposed-api = { group = "io.github.libxposed", name="api", version.ref = "xposed-api" }
 libxposed-service = { group = "io.github.libxposed", name="service", version.ref = "xposed-service" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
 
 [plugins]
