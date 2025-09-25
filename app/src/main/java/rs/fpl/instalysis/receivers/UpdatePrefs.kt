@@ -7,7 +7,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import rs.fpl.instalysis.background.Preferences
+import rs.fpl.instalysis.background.XposedScope
 
 class UpdatePrefs: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -27,7 +27,7 @@ class UpdatePrefs: BroadcastReceiver() {
             return
         }
         CoroutineScope(Dispatchers.IO).launch {
-            Preferences.getPreferences().addIntent(intent)
+            XposedScope.awaitPrefsManager().addIntent(intent)
         }
     }
 

@@ -38,13 +38,6 @@ class MessageReceiver: BroadcastReceiver() {
             return
         }
         val serializedMessage: String = intent.getStringExtra("serializedMessage")!!
-        if(!notificationPermissionGranted(context)){
-            val intent = Intent().apply {
-                setPackage("com.instagram.android")
-                setAction("rs.fpl.instalysis.ASK_FOR_PERMISSIONS")
-            }
-            context!!.sendBroadcast(intent)
-        }
         processMessage(serializedMessage, context)
     }
     fun processMessage(serializedMessage: String, context: Context?){
@@ -68,11 +61,6 @@ class MessageReceiver: BroadcastReceiver() {
             }
         }
 
-    }
-    fun notificationPermissionGranted(context: Context?): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(context!!, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        } else true
     }
     inline fun <T> tryOrNull(block: () -> T): T? =
         try { block() } catch (_: Exception) { null }

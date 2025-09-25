@@ -2,10 +2,10 @@ package rs.fpl.instalysis
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.IntentFilter
 import android.os.Message
 import android.util.Log
@@ -17,13 +17,12 @@ import io.github.libxposed.api.XposedModuleInterface
 import io.github.libxposed.api.annotations.AfterInvocation
 import io.github.libxposed.api.annotations.BeforeInvocation
 import io.github.libxposed.api.annotations.XposedHooker
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.luckypray.dexkit.DexKitBridge
-import org.luckypray.dexkit.result.ClassData
 import org.luckypray.dexkit.result.MethodData
+import rs.fpl.instalysis.background.XposedScope
 import rs.fpl.instalysis.hookers.HandleMessageHooker
 import rs.fpl.instalysis.receivers.instagram.AskForPermsReceiver
 import java.lang.reflect.Method
@@ -32,19 +31,9 @@ import java.lang.reflect.Method
 class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoadedParam): XposedModule(base, params){
 
     companion object{
-        @SuppressLint("StaticFieldLeak")
-        var context: Context? = null
-        val contextDeferred = CompletableDeferred<Context>()
-        suspend fun getContext(): Context {
-            context?.let{return it}
-            context = contextDeferred.await()
-            return context!!
-        }
-
         init{
             System.loadLibrary("dexkit")
         }
-        var classData: ClassData? = null
     }
 
 
@@ -59,11 +48,28 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
                 Log.e("FPL_MyHooker", "${callback.member.name} called")
                 if(callback.member.name == "attach"){
                     val context = callback.args[0] as Context
-                    contextDeferred.complete(context)
-                    ModuleMain.context = context
+                    XposedScope.setContext(context)
+                    val filter = IntentFilter(
+                        "rs.fpl.instalysis.ASK_FOR_PERMISSIONS"
+                    )
+                    ContextCompat.registerReceiver(
+                        context,
+                        AskForPermsReceiver(),
+                        filter,
+                        ContextCompat.RECEIVER_EXPORTED
+                    )
+                    Log.d("FPL_OnPackageLoaded", "registered broadcast receiver in the instagram app.")
+
+
+                    val intent = Intent("rs.fpl.instalysis.CHECK_PERMISSIONS").apply{
+                        setPackage("rs.fpl.instalysis")
+                        setComponent(ComponentName("rs.fpl.instalysis", "rs.fpl.instalysis.receivers.CheckPermissions"))
+                        setFlags(FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.sendBroadcast(intent)
                     return
                 }
-                Toast.makeText(context, "Activity started: " + (callback.thisObject as Activity)::class.qualifiedName.toString(), Toast.LENGTH_SHORT).show()
+                Toast.makeText(XposedScope._context, "Activity started: " + (callback.thisObject as Activity)::class.qualifiedName.toString(), Toast.LENGTH_SHORT).show()
                 Log.d("FPL_MyHooker", "Activity started: ${(callback.thisObject as Activity)::class.qualifiedName.toString()}")
             }
             @JvmStatic
@@ -83,8 +89,6 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
         hook(onCreateMethod, MyHooker::class.java)
         hook(attachMethod, MyHooker::class.java)
 
-
-
         if(param.packageName != "com.instagram.android"){
             return
         }
@@ -93,16 +97,7 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
 
 
         CoroutineScope(Dispatchers.Main).launch {
-            val filter = IntentFilter(
-                "rs.fpl.instalysis.ASK_FOR_PERMISSIONS"
-            )
-            ContextCompat.registerReceiver(
-                getContext(),
-                AskForPermsReceiver(),
-                filter,
-                ContextCompat.RECEIVER_EXPORTED
-            )
-            Log.d("FPL_OnPackageLoaded", "registered broadcast receiver in the instagram app.")
+
         }
     }
 
@@ -140,7 +135,6 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
                 usingStrings("Invalid message.what: ", "Required value was null.")
             }
         }.singleOrNull() ?: error("The class is not unique.")
-        classData = hookClassData
 
         val handleMessageMethod: MethodData? = hookClassData.methods.find { it ->
             it.methodName.contains("handleMessage")
@@ -159,12 +153,10 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
                 putExtra("key", key)
                 putExtra("value", value)
             }
-            while(context == null){
-                Thread.sleep(250)
-                Log.d("FPL", "waiting")
+            CoroutineScope(Dispatchers.Default).launch {
+                XposedScope.awaitContext().sendBroadcast(intent)
+                Log.e("FPL", "sent broadcast")
             }
-            context?.sendBroadcast(intent)
-            Log.e("FPL", "sent broadcast")
         }
     }
     @SuppressLint("PrivateApi")

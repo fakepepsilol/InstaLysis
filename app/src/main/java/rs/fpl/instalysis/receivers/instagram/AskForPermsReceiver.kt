@@ -10,7 +10,7 @@ import rs.fpl.instalysis.hookers.HandleMessageHooker
 
 class AskForPermsReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        Log.e("FPL_Instagram_AskForPermsReceiver", "onReceive called")
+        Log.e("FPL_Instagram_AskForPermsReceiver", "AskForPermsReceiver.onReceive")
         HandleMessageHooker.Companion.context?.let{
             val intent2 = Intent()
             intent2.component = ComponentName("rs.fpl.instalysis", "rs.fpl.instalysis.permissions.PermissionActivity")

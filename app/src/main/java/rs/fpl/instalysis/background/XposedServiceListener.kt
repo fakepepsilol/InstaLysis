@@ -1,8 +1,9 @@
 package rs.fpl.instalysis.background
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.content.edit
 import io.github.libxposed.service.XposedService
@@ -15,43 +16,70 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
-object Preferences{
 
-    var prefsManager: PrefsManager? = null
-    private var deferred: CompletableDeferred<XposedService>? = null
-    var service: XposedService? = null
+@Suppress("unused", "ObjectPropertyName")
+@SuppressLint("StaticFieldLeak")
+object XposedScope{
 
-    suspend fun getXposedService(): XposedService{
-        service?.let { return it }
-        deferred?.let { return it.await() }
-        val newDeferred = CompletableDeferred<XposedService>()
-        deferred = newDeferred
-
-        XposedServiceHelper.registerListener(object : XposedServiceHelper.OnServiceListener{
+    init {
+        XposedServiceHelper.registerListener(object: XposedServiceHelper.OnServiceListener{
             override fun onServiceBind(service: XposedService) {
-                newDeferred.complete(service)
-                Preferences.service = service
+                setXposedService(service)
+                setPreferences(PrefsManager(service))
             }
 
             override fun onServiceDied(service: XposedService) {
-                deferred = null
-                prefsManager?.cleanup()
-                prefsManager = null
+                cleanup()
             }
         })
-        return newDeferred.await()
     }
-    suspend fun getPreferences(): PrefsManager {
-        prefsManager?.let { return it }
-        val service = getXposedService()
-        prefsManager = PrefsManager(service)
-        return prefsManager!!
+    private var contextDeferred = CompletableDeferred<Context>()
+    var _context: Context? = null
+
+    private var prefsManagerDeferred = CompletableDeferred<PrefsManager>()
+    var _prefsManager: PrefsManager? = null
+
+
+    private var xposedServiceDeferred = CompletableDeferred<XposedService>()
+    var _xposedService: XposedService? = null
+
+    fun cleanup(){
+        prefsManagerDeferred = CompletableDeferred()
+        _prefsManager = null
+        xposedServiceDeferred = CompletableDeferred()
+        _xposedService = null
     }
-    suspend fun getChatFile(chatId: String): ParcelFileDescriptor{
-        val service = getXposedService()
-        return service.openRemoteFile(chatId)
+
+    suspend fun awaitContext(): Context{
+        _context?.let { return it }
+        return contextDeferred.await()
+    }
+    fun setContext(context: Context){
+        this._context = context
+        contextDeferred.complete(context)
+    }
+
+
+    suspend fun awaitPrefsManager(): PrefsManager{
+        _prefsManager?.let { return it }
+        return prefsManagerDeferred.await()
+    }
+    fun setPreferences(prefsManager: PrefsManager){
+        this._prefsManager = prefsManager
+        prefsManagerDeferred.complete(prefsManager)
+    }
+
+
+    suspend fun awaitXposedService(): XposedService{
+        _xposedService?.let { return it }
+        return xposedServiceDeferred.await()
+    }
+    fun setXposedService(service: XposedService){
+        this._xposedService = service
+        xposedServiceDeferred.complete(service)
     }
 }
+
 
 class PrefsManager{
     private val tag = "FPL_PrefsManager"
@@ -80,7 +108,7 @@ class PrefsManager{
     }
 
     private fun processIntent(intent: Intent){
-        if(Preferences.prefsManager == null || Preferences.service == null){
+        if(XposedScope._prefsManager == null || XposedScope._xposedService == null){
             Log.e(tag, "Failed saving preferences. Service not running.")
             return
         }

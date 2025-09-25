@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.apache.commons.text.StringEscapeUtils
 import rs.fpl.instalysis.ModuleMain
+import rs.fpl.instalysis.background.XposedScope
 
 @XposedHooker
 class HandleMessageHooker() : XposedInterface.Hooker{
@@ -29,7 +30,7 @@ class HandleMessageHooker() : XposedInterface.Hooker{
         var context: Context? = null
         init {
             CoroutineScope(Dispatchers.Main).launch {
-                context = ModuleMain.getContext()
+                context = XposedScope.awaitContext()
             }
         }
 
