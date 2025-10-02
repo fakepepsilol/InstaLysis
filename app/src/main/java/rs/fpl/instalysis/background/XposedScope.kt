@@ -1,6 +1,7 @@
 package rs.fpl.instalysis.background
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -36,6 +37,8 @@ object XposedScope{
     private var contextDeferred = CompletableDeferred<Context>()
     var _context: Context? = null
 
+    private var activityDeferred = CompletableDeferred<Activity>()
+    var _activity: Activity? = null
     private var prefsManagerDeferred = CompletableDeferred<PrefsManager>()
     var _prefsManager: PrefsManager? = null
 
@@ -44,8 +47,12 @@ object XposedScope{
     var _xposedService: XposedService? = null
 
     fun cleanup(){
+        prefsManagerDeferred.cancel()
         prefsManagerDeferred = CompletableDeferred()
+        _prefsManager?.cleanup()
         _prefsManager = null
+
+        xposedServiceDeferred.cancel()
         xposedServiceDeferred = CompletableDeferred()
         _xposedService = null
     }
@@ -55,8 +62,18 @@ object XposedScope{
         return contextDeferred.await()
     }
     fun setContext(context: Context){
-        this._context = context
+        _context = context
         contextDeferred.complete(context)
+    }
+
+
+    suspend fun awaitActivity(): Activity{
+        _activity?.let { return it }
+        return activityDeferred.await()
+    }
+    fun setActivity(activity: Activity){
+        _activity = activity
+        activityDeferred.complete(activity)
     }
 
 
@@ -65,7 +82,7 @@ object XposedScope{
         return prefsManagerDeferred.await()
     }
     fun setPreferences(prefsManager: PrefsManager){
-        this._prefsManager = prefsManager
+        _prefsManager = prefsManager
         prefsManagerDeferred.complete(prefsManager)
     }
 
@@ -75,7 +92,7 @@ object XposedScope{
         return xposedServiceDeferred.await()
     }
     fun setXposedService(service: XposedService){
-        this._xposedService = service
+        _xposedService = service
         xposedServiceDeferred.complete(service)
     }
 }

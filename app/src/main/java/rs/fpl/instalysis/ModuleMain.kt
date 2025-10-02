@@ -1,32 +1,26 @@
+@file:SuppressLint("PrivateApi", "DiscouragedPrivateApi")
 package rs.fpl.instalysis
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-import android.content.IntentFilter
+import android.os.Bundle
 import android.os.Message
 import android.util.Log
-import android.widget.Toast
-import androidx.core.content.ContextCompat
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
-import io.github.libxposed.api.annotations.AfterInvocation
-import io.github.libxposed.api.annotations.BeforeInvocation
-import io.github.libxposed.api.annotations.XposedHooker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.luckypray.dexkit.DexKitBridge
 import org.luckypray.dexkit.result.MethodData
 import rs.fpl.instalysis.background.XposedScope
-import rs.fpl.instalysis.hookers.HandleMessageHooker
-import rs.fpl.instalysis.receivers.instagram.AskForPermsReceiver
+import rs.fpl.instalysis.hookers.ActivityHooker
+import rs.fpl.instalysis.hookers.ContextHooker
+import rs.fpl.instalysis.hookers.MessageHooker
 import java.lang.reflect.Method
-
 
 class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoadedParam): XposedModule(base, params){
 
@@ -36,71 +30,19 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
         }
     }
 
-
-    @Suppress("unused")
-    @XposedHooker
-    class MyHooker() : XposedInterface.Hooker{
-        companion object{
-
-            @JvmStatic
-            @BeforeInvocation
-            fun before(callback: XposedInterface.BeforeHookCallback){
-                Log.e("FPL_MyHooker", "${callback.member.name} called")
-                if(callback.member.name == "attach"){
-                    val context = callback.args[0] as Context
-                    XposedScope.setContext(context)
-                    val filter = IntentFilter(
-                        "rs.fpl.instalysis.ASK_FOR_PERMISSIONS"
-                    )
-                    ContextCompat.registerReceiver(
-                        context,
-                        AskForPermsReceiver(),
-                        filter,
-                        ContextCompat.RECEIVER_EXPORTED
-                    )
-                    Log.d("FPL_OnPackageLoaded", "registered broadcast receiver in the instagram app.")
-
-
-                    val intent = Intent("rs.fpl.instalysis.CHECK_PERMISSIONS").apply{
-                        setPackage("rs.fpl.instalysis")
-                        setComponent(ComponentName("rs.fpl.instalysis", "rs.fpl.instalysis.receivers.CheckPermissions"))
-                        setFlags(FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.sendBroadcast(intent)
-                    return
-                }
-                Toast.makeText(XposedScope._context, "Activity started: " + (callback.thisObject as Activity)::class.qualifiedName.toString(), Toast.LENGTH_SHORT).show()
-                Log.d("FPL_MyHooker", "Activity started: ${(callback.thisObject as Activity)::class.qualifiedName.toString()}")
-            }
-            @JvmStatic
-            @AfterInvocation
-            fun after(callback: XposedInterface.AfterHookCallback){
-
-            }
-        }
-    }
-
-    @SuppressLint("DiscouragedPrivateApi", "PrivateApi")
     override fun onPackageLoaded(param: XposedModuleInterface.PackageLoadedParam) {
-        log("Package loaded: ${param.packageName}")
-
-        val attachMethod = Class.forName("android.app.Application").getDeclaredMethod("attach", Context::class.java)
-        val onCreateMethod = Class.forName("android.app.Activity").getDeclaredMethod("onCreate", Class.forName("android.os.Bundle"))
-        hook(onCreateMethod, MyHooker::class.java)
-        hook(attachMethod, MyHooker::class.java)
-
         if(param.packageName != "com.instagram.android"){
             return
         }
 
+        val onCreateMethod = Class.forName("android.app.Activity").getDeclaredMethod("onCreate", Bundle::class.java)
+        hook(onCreateMethod, ActivityHooker::class.java)
+
+        val attachMethod = Class.forName("android.app.Application").getDeclaredMethod("attach", Context::class.java)
+        hook(attachMethod, ContextHooker::class.java)
+
         cachedHandleMessageMethodHook(param)
-
-
-        CoroutineScope(Dispatchers.Main).launch {
-
-        }
     }
-
     private fun cachedHandleMessageMethodHook(param: XposedModuleInterface.PackageLoadedParam){
         val tag = "FPL_cachedHandleMessageMethodHook"
 
@@ -126,7 +68,7 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
                 Message::class.java)
         }
         Log.d(tag, "Found method: $method")
-        hook(method, HandleMessageHooker::class.java)
+        hook(method, MessageHooker::class.java)
     }
     private fun findHandleMessageMethod(bridge: DexKitBridge, param: XposedModuleInterface.PackageLoadedParam): Method {
         val hookClassData = bridge.findClass {
@@ -159,7 +101,6 @@ class ModuleMain(base: XposedInterface, params: XposedModuleInterface.ModuleLoad
             }
         }
     }
-    @SuppressLint("PrivateApi")
     private fun getVersionCode(param: XposedModuleInterface.PackageLoadedParam): Long{
         val currentActivityThread = Class.forName("android.app.ActivityThread", false, param.classLoader).getMethod("currentActivityThread").invoke(null)
         val context: Context = Class.forName("android.app.ActivityThread", false, param.classLoader).getMethod("getSystemContext").invoke(currentActivityThread) as Context

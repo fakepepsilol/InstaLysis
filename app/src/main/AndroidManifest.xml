@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-<!--    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />-->
 
     <application
         android:allowBackup="true"
@@ -14,10 +13,15 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.InstaLysis">
+        <service
+            android:name=".background.Instalysis"
+            android:enabled="true"
+            android:exported="true"></service>
+
         <activity
             android:name=".permissions.PermissionActivity"
-            android:theme="@style/Theme.Transparent"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.Transparent" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -42,13 +46,6 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="rs.fpl.instalysis.MESSAGE_RECEIVE" />
-            </intent-filter>
-        </receiver>
-        <receiver
-            android:name=".receivers.CheckPermissions"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="rs.fpl.instalysis.CHECK_PERMISSIONS" />
             </intent-filter>
         </receiver>
     </application>
