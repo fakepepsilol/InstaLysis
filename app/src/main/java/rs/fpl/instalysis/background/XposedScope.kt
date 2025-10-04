@@ -3,19 +3,10 @@ package rs.fpl.instalysis.background
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
-import android.util.Log
-import androidx.core.content.edit
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
 
 
 @Suppress("unused", "ObjectPropertyName")
@@ -26,36 +17,25 @@ object XposedScope{
         XposedServiceHelper.registerListener(object: XposedServiceHelper.OnServiceListener{
             override fun onServiceBind(service: XposedService) {
                 setXposedService(service)
-                setPreferences(PrefsManager(service))
+                setPreferences(service.getRemotePreferences("rs.fpl.instalysis"))
             }
 
             override fun onServiceDied(service: XposedService) {
-                cleanup()
+//                cleanup()
             }
         })
     }
-    private var contextDeferred = CompletableDeferred<Context>()
+    private val contextDeferred = CompletableDeferred<Context>()
     var _context: Context? = null
 
-    private var activityDeferred = CompletableDeferred<Activity>()
+    private val activityDeferred = CompletableDeferred<Activity>()
     var _activity: Activity? = null
-    private var prefsManagerDeferred = CompletableDeferred<PrefsManager>()
-    var _prefsManager: PrefsManager? = null
+    private val preferencesDeferred = CompletableDeferred<SharedPreferences>()
+    var _preferences: SharedPreferences? = null
 
 
-    private var xposedServiceDeferred = CompletableDeferred<XposedService>()
+    private val xposedServiceDeferred = CompletableDeferred<XposedService>()
     var _xposedService: XposedService? = null
-
-    fun cleanup(){
-        prefsManagerDeferred.cancel()
-        prefsManagerDeferred = CompletableDeferred()
-        _prefsManager?.cleanup()
-        _prefsManager = null
-
-        xposedServiceDeferred.cancel()
-        xposedServiceDeferred = CompletableDeferred()
-        _xposedService = null
-    }
 
     suspend fun awaitContext(): Context{
         _context?.let { return it }
@@ -67,81 +47,32 @@ object XposedScope{
     }
 
 
-    suspend fun awaitActivity(): Activity{
+    suspend fun awaitActivity(): Activity {
         _activity?.let { return it }
         return activityDeferred.await()
     }
-    fun setActivity(activity: Activity){
+    fun setActivity(activity: Activity) {
         _activity = activity
         activityDeferred.complete(activity)
     }
 
 
-    suspend fun awaitPrefsManager(): PrefsManager{
-        _prefsManager?.let { return it }
-        return prefsManagerDeferred.await()
+    suspend fun awaitPreferences(): SharedPreferences {
+        _preferences?.let { return it }
+        return preferencesDeferred.await()
     }
-    fun setPreferences(prefsManager: PrefsManager){
-        _prefsManager = prefsManager
-        prefsManagerDeferred.complete(prefsManager)
+    fun setPreferences(preferences: SharedPreferences) {
+        _preferences = preferences
+        preferencesDeferred.complete(preferences)
     }
 
 
-    suspend fun awaitXposedService(): XposedService{
+    suspend fun awaitXposedService(): XposedService {
         _xposedService?.let { return it }
         return xposedServiceDeferred.await()
     }
-    fun setXposedService(service: XposedService){
+    fun setXposedService(service: XposedService) {
         _xposedService = service
         xposedServiceDeferred.complete(service)
-    }
-}
-
-
-class PrefsManager{
-    private val tag = "FPL_PrefsManager"
-
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val intentChannel: Channel<Intent> = Channel(Channel.UNLIMITED)
-
-    private val service: XposedService
-    constructor(service: XposedService){
-        this.service = service
-    }
-
-    init {
-        scope.launch {
-            for(intent in intentChannel){
-                processIntent(intent)
-            }
-        }
-    }
-
-
-    private var prefs: SharedPreferences? = null
-    private fun getPrefs(): SharedPreferences {
-        prefs?.let { return it }
-        service.getRemotePreferences("rs.fpl.instalysis").let { prefs = it; return it }
-    }
-
-    private fun processIntent(intent: Intent){
-        if(XposedScope._prefsManager == null || XposedScope._xposedService == null){
-            Log.e(tag, "Failed saving preferences. Service not running.")
-            return
-        }
-        val key = intent.getStringExtra("key")
-        val value = intent.getStringExtra("value")
-
-        getPrefs().edit(commit = false) {
-            putString(key, value)
-        }
-        Log.i(tag, "Saved $key: $value")
-    }
-    suspend fun addIntent(intent: Intent){
-        intentChannel.send(intent)
-    }
-    fun cleanup(){
-        intentChannel.close()
-        scope.cancel()
     }
 }

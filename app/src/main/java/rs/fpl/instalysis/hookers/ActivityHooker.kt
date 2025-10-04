@@ -6,7 +6,9 @@ import io.github.libxposed.api.annotations.BeforeInvocation
 import io.github.libxposed.api.annotations.XposedHooker
 import rs.fpl.instalysis.background.XposedScope
 import rs.fpl.instalysis.background.instagram.ServiceHelper
+import rs.fpl.instalysis.background.instagram.ServiceMessageType
 
+@Suppress("unused")
 @XposedHooker
 class ActivityHooker : XposedInterface.Hooker {
     companion object {
@@ -14,7 +16,7 @@ class ActivityHooker : XposedInterface.Hooker {
         @JvmStatic
         fun before(callback: XposedInterface.BeforeHookCallback) {
             XposedScope.setActivity(callback.thisObject as Activity)
-            ServiceHelper.sendMessage(ServiceHelper.GET_STATUS)
+            ServiceHelper.sendMessage(ServiceMessageType.GET_STATUS)
         }
     }
 }
