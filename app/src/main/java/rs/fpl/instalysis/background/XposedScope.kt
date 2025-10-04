@@ -13,6 +13,18 @@ import kotlinx.coroutines.CompletableDeferred
 @SuppressLint("StaticFieldLeak")
 object XposedScope{
 
+    private var contextDeferred = CompletableDeferred<Context>()
+    var _context: Context? = null
+
+    private var activityDeferred = CompletableDeferred<Activity>()
+    var _activity: Activity? = null
+
+    private var preferencesDeferred = CompletableDeferred<SharedPreferences>()
+    var _preferences: SharedPreferences? = null
+
+    private var xposedServiceDeferred = CompletableDeferred<XposedService>()
+    var _xposedService: XposedService? = null
+
     init {
         XposedServiceHelper.registerListener(object: XposedServiceHelper.OnServiceListener{
             override fun onServiceBind(service: XposedService) {
@@ -21,21 +33,9 @@ object XposedScope{
             }
 
             override fun onServiceDied(service: XposedService) {
-//                cleanup()
             }
         })
     }
-    private val contextDeferred = CompletableDeferred<Context>()
-    var _context: Context? = null
-
-    private val activityDeferred = CompletableDeferred<Activity>()
-    var _activity: Activity? = null
-    private val preferencesDeferred = CompletableDeferred<SharedPreferences>()
-    var _preferences: SharedPreferences? = null
-
-
-    private val xposedServiceDeferred = CompletableDeferred<XposedService>()
-    var _xposedService: XposedService? = null
 
     suspend fun awaitContext(): Context{
         _context?.let { return it }
