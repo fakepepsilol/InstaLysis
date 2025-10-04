@@ -27,7 +27,7 @@ class Instalysis : Service() {
             when(ServiceMessageType.fromInt(msg.what)){
                 ServiceMessageType.HANDLE_MESSAGE -> {
                     Log.d(tag, "HANDLE_MESSAGE")
-                    MessageHandler.handleMessage(msg.obj as Bundle)
+                    MessageHandler.handleEvent(msg.obj as Bundle, context)
                 }
                 ServiceMessageType.UPDATE_PREFERENCES -> {
                     Log.d(tag, "UPDATE_PREFERENCES")
