@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "io.github.libxposed.service"
+    namespace = "io.github.libxposed.interfaze"
     compileSdk = 34
     buildToolsVersion = "34.0.0"
 
