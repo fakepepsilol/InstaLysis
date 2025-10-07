@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
-//    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.ksp)
 }
 
 android {
@@ -65,13 +65,12 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
 
-
-//    implementation(libs.androidx.datastore.preferences)
-//    implementation(libs.androidx.datastore.preferences.core)
-
     compileOnly(libs.libxposed.api)
     implementation(libs.libxposed.service)
 
     implementation(libs.dexkit)
     implementation(libs.commons.text)
+
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
 }
