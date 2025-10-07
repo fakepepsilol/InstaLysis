@@ -119,6 +119,10 @@ class Event{
                                 this.eot = "$eo|has_seen"
                             if(operationPath.contains("update_media_interventions"))
                                 this.eot = "$eo|update_media_interventions"
+                            if(operationPath.contains("friendship_status/blocking")){
+                                val newStatus = operationObject.getBoolean("value")
+                                this.eot = "$eo|${if(newStatus) "blocked" else "unblocked"}"
+                            }
                         }
                         "add" -> {
                             if(operationPath.contains("reactions/likes"))
