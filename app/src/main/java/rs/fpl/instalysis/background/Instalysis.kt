@@ -11,7 +11,7 @@ import android.os.Message
 import android.os.Messenger
 import android.util.Log
 import rs.fpl.instalysis.background.instagram.ServiceMessageType
-import rs.fpl.instalysis.handlers.MessageHandler
+import rs.fpl.instalysis.handlers.EventHandler
 import rs.fpl.instalysis.permissions.Permissions
 class Instalysis : Service() {
     companion object{
@@ -27,7 +27,7 @@ class Instalysis : Service() {
             when(ServiceMessageType.fromInt(msg.what)){
                 ServiceMessageType.HANDLE_MESSAGE -> {
                     Log.d(tag, "HANDLE_MESSAGE")
-                    MessageHandler.handleEvent(msg.obj as Bundle, context)
+                    EventHandler.handleEvent(msg.obj as Bundle, context)
                 }
                 ServiceMessageType.UPDATE_PREFERENCES -> {
                     Log.d(tag, "UPDATE_PREFERENCES")
